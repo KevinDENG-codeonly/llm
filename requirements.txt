@@ -1,0 +1,7 @@
+mlflow
+torch
+transformers
+datasets
+peft
+modelscope
+pandas
