@@ -1,0 +1,126 @@
+# 模型配置文件
+
+# 预训练模型
+pretrained_models:
+  vit_base: "google/vit-base-patch16-224"
+  vit_large: "google/vit-large-patch16-224"
+  vit_huge: "google/vit-huge-patch14-224-in21k"
+  deit_base: "facebook/deit-base-distilled-patch16-224"
+  deit_small: "facebook/deit-small-distilled-patch16-224"
+
+# 模型架构配置
+architecture:
+  image_size: 224
+  patch_size: 16
+  hidden_size: 768
+  num_hidden_layers: 12
+  num_attention_heads: 12
+  intermediate_size: 3072
+  hidden_dropout_prob: 0.0
+  attention_probs_dropout_prob: 0.0
+  initializer_range: 0.02
+  layer_norm_eps: 1e-12
+
+# LoRA配置预设
+lora_presets:
+  base:
+    r: 8
+    alpha: 16
+    dropout: 0.1
+    target_modules: ["query", "key", "value"]
+  
+  medium:
+    r: 16
+    alpha: 32
+    dropout: 0.1
+    target_modules: ["query", "key", "value", "dense"]
+  
+  large:
+    r: 32
+    alpha: 64
+    dropout: 0.1
+    target_modules: ["query", "key", "value", "dense", "intermediate.dense", "output.dense"]
+  
+  full_attention:
+    r: 16
+    alpha: 32
+    dropout: 0.1
+    target_modules: ["query", "key", "value", "dense"]
+  
+  mlp_only:
+    r: 16
+    alpha: 32
+    dropout: 0.1
+    target_modules: ["intermediate.dense", "output.dense"]
+
+# 分类头配置
+classifier:
+  hidden_size: 768
+  num_labels: 10
+  dropout: 0.1
+  use_bias: true
+  activation: "gelu"
+
+# 优化配置
+optimization:
+  # 学习率配置
+  learning_rates:
+    backbone: 1e-5
+    lora: 1e-4
+    classifier: 1e-3
+  
+  # 优化器配置
+  optimizer:
+    type: "adamw"
+    betas: [0.9, 0.999]
+    eps: 1e-8
+    weight_decay: 1e-2
+  
+  # 调度器配置
+  scheduler:
+    type: "cosine"
+    warmup_ratio: 0.1
+    min_lr_ratio: 0.01
+
+# 正则化配置
+regularization:
+  dropout: 0.1
+  attention_dropout: 0.1
+  hidden_dropout: 0.1
+  label_smoothing: 0.1
+  mixup_alpha: 0.2
+  cutmix_alpha: 1.0
+
+# 推理配置
+inference:
+  batch_size: 64
+  num_workers: 4
+  use_tta: false  # Test Time Augmentation
+  tta_transforms: 5
+  ensemble_models: []
+
+# 模型变体配置
+variants:
+  efficient:
+    # 轻量级配置
+    model: "google/vit-base-patch16-224"
+    lora_preset: "base"
+    image_size: 224
+    
+  standard:
+    # 标准配置
+    model: "google/vit-base-patch16-224"
+    lora_preset: "medium"
+    image_size: 224
+    
+  high_performance:
+    # 高性能配置
+    model: "google/vit-large-patch16-224"
+    lora_preset: "large"
+    image_size: 224
+    
+  research:
+    # 研究配置
+    model: "google/vit-huge-patch14-224-in21k"
+    lora_preset: "large"
+    image_size: 224

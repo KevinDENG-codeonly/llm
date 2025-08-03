@@ -1,0 +1,76 @@
+# 训练配置文件
+
+# 模型配置
+model:
+  name: "google/vit-base-patch16-224"  # 预训练模型名称
+  num_classes: 10  # 分类数量
+  use_timm: false  # 是否使用timm库
+
+# LoRA配置
+lora:
+  r: 16  # LoRA rank
+  alpha: 32  # LoRA alpha
+  dropout: 0.1  # LoRA dropout
+  target_modules: ["query", "key", "value", "dense"]  # 目标模块
+  config_name: "medium"  # 预定义配置名称: base, medium, large
+
+# 数据配置
+data:
+  train_dir: "data/processed/train"  # 训练数据目录
+  val_dir: "data/processed/val"  # 验证数据目录
+  test_dir: "data/processed/test"  # 测试数据目录
+  image_size: 224  # 图像尺寸
+  batch_size: 32  # 批次大小
+  num_workers: 4  # 数据加载线程数
+  augment_level: "medium"  # 数据增强级别: light, medium, heavy
+  use_mixup: false  # 是否使用MixUp
+  use_cutmix: false  # 是否使用CutMix
+  mixup_alpha: 1.0  # MixUp参数
+  cutmix_alpha: 1.0  # CutMix参数
+
+# 训练配置
+training:
+  num_epochs: 20  # 训练轮数
+  learning_rate: 1e-4  # 学习率
+  weight_decay: 1e-2  # 权重衰减
+  optimizer: "adamw"  # 优化器
+  scheduler: "cosine"  # 学习率调度器: cosine, onecycle, warmup
+  warmup_epochs: 2  # 预热轮数
+  label_smoothing: 0.1  # 标签平滑
+  use_amp: true  # 是否使用混合精度
+  gradient_clipping: 1.0  # 梯度裁剪
+  freeze_backbone: false  # 是否冻结主干网络
+
+# 早停配置
+early_stopping:
+  patience: 7  # 耐心值
+  min_delta: 0.001  # 最小改进值
+  restore_best_weights: true  # 是否恢复最佳权重
+
+# 保存配置
+save:
+  checkpoint_dir: "checkpoints"  # 检查点保存目录
+  log_dir: "logs"  # 日志保存目录
+  save_freq: 5  # 保存频率（每N个epoch）
+  keep_last_n: 3  # 保留最后N个检查点
+
+# 实验跟踪
+experiment:
+  use_mlflow: true  # 是否使用MLflow
+  use_tensorboard: false  # 是否使用TensorBoard
+  use_wandb: false  # 是否使用W&B
+  experiment_name: "vit_lora_experiment"  # 实验名称
+  run_name: null  # 运行名称，null时自动生成
+
+# 验证配置
+validation:
+  val_freq: 1  # 验证频率（每N个epoch）
+  save_predictions: true  # 是否保存预测结果
+  compute_metrics: true  # 是否计算详细指标
+
+# 环境配置
+environment:
+  seed: 42  # 随机种子
+  device: "auto"  # 设备: auto, cpu, cuda
+  pin_memory: true  # 是否使用pin_memory
+  deterministic: true  # 是否使用确定性算法
