@@ -8,9 +8,16 @@ import pandas as pd
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 import torch
+import numpy as np
+
+# 可选导入 albumentations
+try:
+    import albumentations as A
+    from albumentations.pytorch import ToTensorV2
+    HAS_ALBUMENTATIONS = True
+except ImportError:
+    HAS_ALBUMENTATIONS = False
 
 
 class ImageClassificationDataset(Dataset):
@@ -84,47 +91,86 @@ class ImageClassificationDataset(Dataset):
 def get_train_transforms(image_size=224, augment_level='medium'):
     """获取训练时的数据变换"""
     
-    if augment_level == 'light':
-        transform = A.Compose([
-            A.Resize(image_size, image_size),
-            A.HorizontalFlip(p=0.5),
-            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ToTensorV2(),
-        ])
-    elif augment_level == 'medium':
-        transform = A.Compose([
-            A.Resize(image_size + 32, image_size + 32),
-            A.RandomCrop(image_size, image_size),
-            A.HorizontalFlip(p=0.5),
-            A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.1, rotate_limit=15, p=0.5),
-            A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=0.5),
-            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ToTensorV2(),
-        ])
-    elif augment_level == 'heavy':
-        transform = A.Compose([
-            A.Resize(image_size + 64, image_size + 64),
-            A.RandomCrop(image_size, image_size),
-            A.HorizontalFlip(p=0.5),
-            A.ShiftScaleRotate(shift_limit=0.15, scale_limit=0.15, rotate_limit=30, p=0.7),
-            A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.2, p=0.7),
-            A.RandomBrightnessContrast(p=0.5),
-            A.GaussNoise(var_limit=(10.0, 50.0), p=0.3),
-            A.Blur(blur_limit=3, p=0.3),
-            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ToTensorV2(),
-        ])
+    if HAS_ALBUMENTATIONS:
+        # 使用 albumentations
+        if augment_level == 'light':
+            transform = A.Compose([
+                A.Resize(image_size, image_size),
+                A.HorizontalFlip(p=0.5),
+                A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                ToTensorV2(),
+            ])
+        elif augment_level == 'medium':
+            transform = A.Compose([
+                A.Resize(image_size + 32, image_size + 32),
+                A.RandomCrop(image_size, image_size),
+                A.HorizontalFlip(p=0.5),
+                A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.1, rotate_limit=15, p=0.5),
+                A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=0.5),
+                A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                ToTensorV2(),
+            ])
+        elif augment_level == 'heavy':
+            transform = A.Compose([
+                A.Resize(image_size + 64, image_size + 64),
+                A.RandomCrop(image_size, image_size),
+                A.HorizontalFlip(p=0.5),
+                A.ShiftScaleRotate(shift_limit=0.15, scale_limit=0.15, rotate_limit=30, p=0.7),
+                A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.2, p=0.7),
+                A.RandomBrightnessContrast(p=0.5),
+                A.GaussNoise(var_limit=(10.0, 50.0), p=0.3),
+                A.Blur(blur_limit=3, p=0.3),
+                A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                ToTensorV2(),
+            ])
+    else:
+        # 使用 torchvision transforms 作为备选
+        if augment_level == 'light':
+            transform = transforms.Compose([
+                transforms.Resize((image_size, image_size)),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ])
+        elif augment_level == 'medium':
+            transform = transforms.Compose([
+                transforms.Resize((image_size + 32, image_size + 32)),
+                transforms.RandomCrop((image_size, image_size)),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+                transforms.RandomRotation(degrees=15),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ])
+        elif augment_level == 'heavy':
+            transform = transforms.Compose([
+                transforms.Resize((image_size + 64, image_size + 64)),
+                transforms.RandomCrop((image_size, image_size)),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.2),
+                transforms.RandomRotation(degrees=30),
+                transforms.RandomAffine(degrees=0, scale=(0.85, 1.15)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ])
     
     return transform
 
 
 def get_val_transforms(image_size=224):
     """获取验证时的数据变换"""
-    return A.Compose([
-        A.Resize(image_size, image_size),
-        A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ToTensorV2(),
-    ])
+    if HAS_ALBUMENTATIONS:
+        return A.Compose([
+            A.Resize(image_size, image_size),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ])
+    else:
+        return transforms.Compose([
+            transforms.Resize((image_size, image_size)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
 
 
 def create_data_loaders(train_dir, val_dir, test_dir=None, 

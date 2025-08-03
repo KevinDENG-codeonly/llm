@@ -98,11 +98,15 @@ def create_vit_lora_model(model_name="google/vit-base-patch16-224",
     if target_modules is None:
         target_modules = ["query", "key", "value", "dense"]
     
-    # 加载预训练模型
+    # 加载预训练模型（使用镜像端点）
+    import os
+    os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+    
     model = ViTForImageClassification.from_pretrained(
         model_name,
         num_labels=num_classes,
-        ignore_mismatched_sizes=True
+        ignore_mismatched_sizes=True,
+        cache_dir=os.environ.get('HUGGINGFACE_HUB_CACHE', '/root/.cache/huggingface')
     )
     
     # 配置LoRA
